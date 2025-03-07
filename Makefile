@@ -1,5 +1,5 @@
-VLANG_FILES := $(wildcard *.v)
-WASM_FILES := $(patsubst %.v,wasmout/%.wasm,$(VLANG_FILES))
+VLANG_FILES := $(shell find . -type f -name "*.v")
+WASM_FILES := $(patsubst %.v,%.wasm,$(VLANG_FILES))
 
 # Keep test at the top so that it is default when `make` is called.
 # This is used by Travis CI.
@@ -24,7 +24,6 @@ pre-commit: update coverage.txt
 # Vlang / WASM
 build-wasm: $(WASM_FILES)
 
-wasmout/%.wasm: %.v
-	mkdir -p wasmout
+%.wasm: %.v
 	echo "Compiling $< to $@"
 	v -b wasm -os wasi $< -o $@

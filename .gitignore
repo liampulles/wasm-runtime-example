@@ -20,7 +20,7 @@ coverage.txt
 target/
 
 # Compiled stuff
-wasmout/
+*.wasm
 wasm-runtime-example
 
 # IDE
