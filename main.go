@@ -10,7 +10,7 @@ import (
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 )
 
-//go:embed wasmout/add.wasm
+//go:embed add.wasm
 var addWasm []byte
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 
 	// Instantiate WASI
 	wasi_snapshot_preview1.MustInstantiate(ctx, r)
-	// Load add.wasm
+	// Load WASM
 	addMod, err := r.InstantiateWithConfig(ctx, addWasm, wazero.NewModuleConfig())
 	if err != nil {
 		log.Panicf("failed to instantiate module: %v", err)
