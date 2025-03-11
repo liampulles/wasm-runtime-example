@@ -3,15 +3,16 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"net/http"
 
 	"github.com/dop251/goja"
 )
 
-//go:embed add.js
+//go:embed middleware.js
 var addJS []byte
 
 // Compile the javascript
-var addProg = goja.MustCompile("add", string(addJS), true)
+var addProg = goja.MustCompile("middleware", string(addJS), true)
 
 func main() {
 	// Create goja runtime
@@ -23,12 +24,25 @@ func main() {
 		panic(err)
 	}
 
-	// Export the contained add function
-	var add func(int, int) int
-	err = vm.ExportTo(vm.Get("add"), &add)
+	// Instantiate our go env which we will pass through
+	env := GojaEnv{}
+
+	// Export the contained handleRequest function
+	var handleRequest func(GojaEnv, http.Request)
+	err = vm.ExportTo(vm.Get("handleRequest"), &handleRequest)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("%d + %d = %d\n", 1, 2, add(1, 2))
+}
+
+// Defines go methods that we pass to Goja, so that Goja can use them
+type GojaEnv struct{}
+
+func (GojaEnv) Println(a ...any) {
+	fmt.Println(a...)
+}
+
+func (GojaEnv) Printf(format string, a ...any) {
+	fmt.Printf(format, a...)
 }
