@@ -27,13 +27,37 @@ func main() {
 	// Instantiate our go env which we will pass through
 	env := GojaEnv{}
 
-	// Export the contained handleRequest function
-	var handleRequest func(GojaEnv, http.Request)
-	err = vm.ExportTo(vm.Get("handleRequest"), &handleRequest)
+	// Export the contained gojaHandleRequest function
+	var gojaHandleRequest func(GojaEnv, *http.Request)
+	err = vm.ExportTo(vm.Get("handleRequest"), &gojaHandleRequest)
 	if err != nil {
 		panic(err)
 	}
 
+	http.HandleFunc("/", gojaMiddleware(env, gojaHandleRequest, handler))
+	err = http.ListenAndServe(":9090", nil)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func gojaMiddleware(
+	env GojaEnv,
+	gojaFn func(GojaEnv, *http.Request),
+	del http.HandlerFunc,
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Call gojaFn
+		gojaFn(env, r)
+
+		// Carry on with handler
+		del(w, r)
+	}
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	// Always return a duck
+	w.Write([]byte("a duck"))
 }
 
 // Defines go methods that we pass to Goja, so that Goja can use them
