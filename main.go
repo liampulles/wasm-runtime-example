@@ -1,39 +1,34 @@
 package main
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
-	"log"
 
-	"github.com/tetratelabs/wazero"
-	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
+	"github.com/dop251/goja"
 )
 
-//go:embed add.wasm
-var addWasm []byte
+//go:embed add.js
+var addJS []byte
+
+// Compile the javascript
+var addProg = goja.MustCompile("add", string(addJS), true)
 
 func main() {
-	ctx := context.Background()
+	// Create goja runtime
+	vm := goja.New()
 
-	// Create a new WebAssembly Runtime, close it later
-	r := wazero.NewRuntime(ctx)
-	defer r.Close(ctx) // This closes everything this Runtime created.
-
-	// Instantiate WASI
-	wasi_snapshot_preview1.MustInstantiate(ctx, r)
-	// Load WASM
-	addMod, err := r.InstantiateWithConfig(ctx, addWasm, wazero.NewModuleConfig())
+	// Load the add program into the vm (we run the script, which loads declared funcs)
+	_, err := vm.RunProgram(addProg)
 	if err != nil {
-		log.Panicf("failed to instantiate module: %v", err)
+		panic(err)
 	}
 
-	// Call the `add` function and print the results to the console.
-	add := addMod.ExportedFunction("add")
-	results, err := add.Call(ctx, 1, 2)
+	// Export the contained add function
+	var add func(int, int) int
+	err = vm.ExportTo(vm.Get("add"), &add)
 	if err != nil {
-		log.Panicf("failed to call add: %v", err)
+		panic(err)
 	}
 
-	fmt.Printf("%d + %d = %d\n", 1, 2, results[0])
+	fmt.Printf("%d + %d = %d\n", 1, 2, add(1, 2))
 }
